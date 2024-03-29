@@ -137,7 +137,7 @@
 
     <Button
         android:id="@+id/auditBtn"
-        android:layout_width="126dp"
+        android:layout_width="wrap_content"
         android:layout_height="43dp"
         android:layout_marginTop="15dp"
         android:layout_marginBottom="7dp"

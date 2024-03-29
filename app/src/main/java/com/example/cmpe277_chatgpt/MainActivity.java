@@ -1,9 +1,11 @@
 package com.example.cmpe277_chatgpt;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -25,16 +27,27 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog progressDialog;
+    private DatabaseHelper databaseHelper;
+
+    private String lastPrompt = null;
+    private String lastResponse = null;
+    private String promptSentTime = null;
+    private String responseReceivedTime = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        databaseHelper = new DatabaseHelper(this);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -44,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
         EditText promptInput = findViewById(R.id.promptEt);
         Button sendPromptBtn = findViewById(R.id.sendBtn);
         Button cancelBtn = findViewById(R.id.cancelPromptBtn);
+        Button auditBtn = findViewById(R.id.auditBtn);
         TextView responseTextView = findViewById(R.id.resultTv);
 
         cancelBtn.setOnClickListener(v -> {
@@ -59,11 +73,19 @@ public class MainActivity extends AppCompatActivity {
                         "Please wait...",
                         true);
 
+                promptSentTime = String.valueOf(new Date().getTime());
+
+
                 new OpenAIAsyncTask(response -> {
                     if(progressDialog != null && progressDialog.isShowing()) {
                         progressDialog.dismiss();
                     }
                     responseTextView.setText(response);
+
+                    // DB Values Setup
+                    responseReceivedTime = String.valueOf(new Date().getTime());
+                    lastPrompt = prompt;
+                    lastResponse = response;
                 }).execute(prompt);
 
             } else {
@@ -71,6 +93,50 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+        auditBtn.setOnClickListener(v -> {
+            if (lastPrompt != null && lastResponse != null && promptSentTime != null && responseReceivedTime != null) {
+                databaseHelper.insertAuditPrompt(promptSentTime, lastPrompt);
+                databaseHelper.insertResponse(responseReceivedTime, lastResponse);
+                Toast.makeText(this, "Audit information saved.", Toast.LENGTH_SHORT).show();
+
+                lastPrompt = null;
+                lastResponse = null;
+                promptSentTime = null;
+                responseReceivedTime = null;
+            } else {
+                Toast.makeText(this, "No prompt/response to save.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        auditBtn.setOnLongClickListener(v -> {
+            showAuditDataDialog();
+            return true;
+        });
+    }
+
+    private void showAuditDataDialog() {
+        List<String> prompts = databaseHelper.getAllAuditPrompts();
+        List<String> responses = databaseHelper.getAllResponses();
+
+        StringBuilder dataToShow = new StringBuilder("Prompts:\n");
+        for (String prompt : prompts) {
+            dataToShow.append(prompt).append("\n");
+        }
+        dataToShow.append("\nResponses:\n");
+        for (String response : responses) {
+            dataToShow.append(response).append("\n");
+        }
+
+        // Display the data in a dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        System.out.println("============AUDITLOG============");
+        System.out.println(dataToShow);
+        System.out.println("========================");
+        builder.setTitle("Audit Data")
+                .setMessage(dataToShow.toString())
+                .setPositiveButton("OK", null); // Just dismiss the dialog on button click
+        builder.show();
     }
 
     private static class OpenAIAsyncTask extends AsyncTask<String, Void, String> {
