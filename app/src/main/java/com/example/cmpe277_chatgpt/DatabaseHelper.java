@@ -9,7 +9,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
@@ -64,6 +63,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    @Nullable
     private String decrypt(String input) {
         try {
             SecretKey secretKey = new SecretKeySpec(ENCRYPTION_KEY.getBytes(StandardCharsets.UTF_8), "AES");

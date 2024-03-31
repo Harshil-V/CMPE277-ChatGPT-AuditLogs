@@ -12,6 +12,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -135,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         System.out.println("========================");
         builder.setTitle("Audit Data")
                 .setMessage(dataToShow.toString())
-                .setPositiveButton("OK", null); // Just dismiss the dialog on button click
+                .setPositiveButton("OK", null);
         builder.show();
     }
 
@@ -153,8 +155,9 @@ public class MainActivity extends AppCompatActivity {
 
         private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 
+        @Nullable
         @Override
-        protected String doInBackground(String... params) {
+        protected String doInBackground(@NonNull String... params) {
             String prompt = params[0];
             try {
                 URL url = new URL(OPENAI_URL);
